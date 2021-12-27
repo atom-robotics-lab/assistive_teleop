@@ -1,28 +1,26 @@
+#! /usr/bin/env python3
 
-from genpy import message
-import rospy 
-from geometry_msgs.msg import Twist 
-from sensor_msgs.msg import LaserScan 
+import rospy
+from geometry_msgs.msg import Twist
+from sensor_msgs.msg import LaserScan
+from nav_msgs.msg import Odometry
 import math
 
-dist = 0.5
-avoid = False
-
 class obstacle_avoider:
+
     def __init__(self):
 
         self.regions = {
-            'right': 0, 
+            'right': 0,
             'fright': 0, 
             'front': 0, 
             'fleft': 0, 
             'left': 0, 
             }
-
-        self.pub = None
-        self.message = Twist()
-        self.rate = rospy.Rate(15)
-        rospy.Subscriber('/ebot/laser/scan', LaserScan, self.laser_callback())
+        rospy.init_node('obstacle_avoider')
+        rospy.Subscriber('/ebot/laser/scan', LaserScan, self.laser_callback)
+        self.dist = 0.5
+        self.avoid = False
 
     def turn(self, z):
         self.message
@@ -37,39 +35,61 @@ class obstacle_avoider:
             'front':  min(min(msg.ranges[288:431]), 10), 
             'fleft':  min(min(msg.ranges[432:575]), 10), 
             'left':   min(min(msg.ranges[576:713]), 10), 
-    } 
+            } 
 
-    def obstacle_avoid(self , lin_vel , ang_vel):
+    def obstacle_avoid(self):
 
-        self.vel.linear.x = lin_vel
-        self.vel.angular.z = ang_vel
 
-        while avoid != True:
+        while self.avoid != True:
        
-            if self.regions['fright'] < dist and self.regions['front'] < dist and self.regions['fleft'] < dist: #no wall detected
+            if self.regions['fright'] < self.dist and self.regions['front'] < self.dist and self.regions['fleft'] < self.dist: #no wall detected
                 print("Wall Avoided")
-                avoid = True
-            elif self.regions['fright'] > dist and self.regions['front'] < dist and self.regions['fleft'] < dist: #wall on front-right
+                self.avoid = True
+            elif self.regions['fright'] > self.dist and self.regions['front'] < self.dist and self.regions['fleft'] < self.dist: #wall on front-right
                 print("Turning Left")
                 self.turn(math.pi/4)
-                avoid = False
-            elif self.regions['fright'] < dist and self.regions['front'] > dist and self.regions['fleft'] < dist: #wall in front
+                self.avoid = False
+            elif self.regions['fright'] < self.dist and self.regions['front'] > self.dist and self.regions['fleft'] < self.dist: #wall in front
                 print("Turning left")
                 self.turn(math.pi/2)
-                avoid = False
-            elif self.regions['fright'] < dist and self.regions['front'] < dist and self.regions['fleft'] > dist: #wall on front-left
+                self.avoid = False
+            elif self.regions['fright'] < self.dist and self.regions['front'] < self.dist and self.regions['fleft'] > self.dist: #wall on front-left
                 print("Turning right")
                 self.turn(-math.pi/4)
-                avoid = False
-            elif self.regions['fright'] < dist or self.regions['front'] < dist or self.regions['fleft'] > dist: #wall either in front and front-right
+                self.avoid = False
+            elif self.regions['fright'] < self.dist or self.regions['front'] < self.dist or self.regions['fleft'] > self.dist: #wall either in front and front-right
                 print("Turning left")
                 self.turn(math.pi/4)
-                avoid = False
-            elif self.regions['fright'] > dist or self.regions['front'] < dist or self.regions['fleft'] < dist: #wall either in front and front-left
+                self.avoid = False
+            elif self.regions['fright'] > self.dist or self.regions['front'] < self.dist or self.regions['fleft'] < self.dist: #wall either in front and front-left
                 print("Turning right")
                 self.turn(-math.pi/4)
-                avoid = False
+                self. avoid = False
 
-        if avoid == True:
+        if self.avoid == True:
             #call the goto function as the wall is avoided
             print("calling the goto function now")
+
+    def check_obstacle(self):
+        if self.regions['front'] < self.dist:
+            print("obstacle detected")
+            self.message.linear.x = 0
+            self.pub.publish(self.message)
+            self.obstacle_avoid()
+
+    
+    def demo_controller(self):
+        self.message = Twist()
+        self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+        self.rate = rospy.Rate(15)
+
+        while not rospy.is_shutdown():
+            self.message.linear.x = 1.0
+            self.pub.publish(self.message)
+            self.check_obstacle()
+            self.rate.sleep()
+
+
+if __name__ == "__main__":
+    avoider = obstacle_avoider()
+    avoider.demo_controller()
