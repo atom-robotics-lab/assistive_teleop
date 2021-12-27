@@ -1,3 +1,4 @@
+
 from genpy import message
 import rospy 
 from geometry_msgs.msg import Twist 
@@ -18,14 +19,16 @@ class obstacle_avoider:
             'left': 0, 
             }
 
-    pub = None
-    message = Twist()
+        self.pub = None
+        self.message = Twist()
+        self.rate = rospy.Rate(15)
+        rospy.Subscriber('/ebot/laser/scan', LaserScan, self.laser_callback())
 
     def turn(self, z):
-        message
-        message.linear.x = 0
-        message.angular.z = z
-        self.pub.publish(message)
+        self.message
+        self.message.linear.x = 0.5
+        self.message.angular.z = z
+        self.pub.publish(self.message)
 
     def laser_callback(self, msg): 
         self.regions = { 
@@ -35,9 +38,6 @@ class obstacle_avoider:
             'fleft':  min(min(msg.ranges[432:575]), 10), 
             'left':   min(min(msg.ranges[576:713]), 10), 
     } 
-
-    rospy.Subscriber('/ebot/laser/scan', LaserScan, laser_callback())
-    rate = rospy.Rate(15)
 
     def obstacle_avoid(self , lin_vel , ang_vel):
 
