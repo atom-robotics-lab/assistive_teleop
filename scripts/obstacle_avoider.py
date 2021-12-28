@@ -18,7 +18,7 @@ class obstacle_avoider:
             'left': 0, 
             }
         rospy.init_node('obstacle_avoider')
-        rospy.Subscriber('/ebot/laser/scan', LaserScan, self.laser_callback)
+        rospy.Subscriber('/laser/scan', LaserScan, self.laser_callback)
         self.dist = 0.5
         self.wall_dist = 0.3
         self.avoid = False
@@ -37,6 +37,8 @@ class obstacle_avoider:
             'fleft':  min(min(msg.ranges[432:575]), 10), 
             'left':   min(min(msg.ranges[576:713]), 10), 
             } 
+        print(self.regions)
+        print("regions")
 
     def obstacle_avoid(self):
 
@@ -70,6 +72,9 @@ class obstacle_avoider:
             print("calling the goto function now")
 
     def check_obstacle(self):
+        print("front = " + str(self.regions['front']))
+        print("fleft = " + str(self.regions['fleft']))
+        print("fright = " + str(self.regions['fright']))
         if self.regions['front'] < self.wall_dist:
             print("obstacle detected")
             self.message.linear.x = 0
@@ -91,3 +96,4 @@ class obstacle_avoider:
 if __name__ == "__main__":
     avoider = obstacle_avoider()
     avoider.demo_controller()
+    rospy.spin()
