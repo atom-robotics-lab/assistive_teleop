@@ -31,14 +31,13 @@ class obstacle_avoider:
 
     def laser_callback(self, msg): 
         self.regions = { 
-            'right':  min(min(msg.ranges[0:143]), 10), 
-            'fright': min(min(msg.ranges[144:287]), 10), 
-            'front':  min(min(msg.ranges[288:431]), 10), 
-            'fleft':  min(min(msg.ranges[432:575]), 10), 
-            'left':   min(min(msg.ranges[576:713]), 10), 
+            'right':  min(min(msg.ranges[235:285]), 10), 
+            'fright': min(min(msg.ranges[286:335]), 10), 
+            'front':  min(min(msg.ranges[0:24] + msg.ranges[336:359]), 10), 
+            'fleft':  min(min(msg.ranges[25:75]), 10), 
+            'left':   min(min(msg.ranges[76:125]), 10), 
             } 
-        print(self.regions)
-        print("regions")
+        #print(self.regions)
 
     def obstacle_avoid(self):
 
@@ -87,7 +86,7 @@ class obstacle_avoider:
         self.rate = rospy.Rate(15)
 
         while not rospy.is_shutdown():
-            self.message.linear.x = 1.0
+            self.message.linear.x = 0.5
             self.pub.publish(self.message)
             self.check_obstacle()
             self.rate.sleep()
