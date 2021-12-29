@@ -19,14 +19,14 @@ class obstacle_avoider:
             }
         rospy.init_node('obstacle_avoider')
         rospy.Subscriber('/laser/scan', LaserScan, self.laser_callback)
-        self.dist = 0.7
-        self.wall_dist = 0.5
+        self.dist = 1.0
+        self.wall_dist = 0.8
         self.avoid = False
         self.message = Twist()
         self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
 
     def turn(self, z):
-        self.move(0.2 , z)
+        self.move(0.05 , z)
 
     def laser_callback(self, msg): 
         self.regions = { 
@@ -39,30 +39,33 @@ class obstacle_avoider:
         #print(self.regions)
 
     def obstacle_avoid(self):
+        print("obstacle avoider started")
+        self.avoid = False
 
-        while self.avoid != True:
+        while self.avoid == False:
+            print("into while loop")
             if self.regions['fright'] > self.dist and self.regions['front'] > self.dist and self.regions['fleft'] > self.dist: #no wall detected
                 print("Wall Avoided")
                 self.avoid = True
             elif self.regions['fright'] < self.dist and self.regions['front'] > self.dist and self.regions['fleft'] > self.dist: #wall on front-right
-                print("Turning Left")
-                self.turn(math.pi/4)
+                print("Turning Left for front-right")
+                self.turn(1.2)
                 self.avoid = False
             elif self.regions['fright'] > self.dist and self.regions['front'] < self.dist and self.regions['fleft'] > self.dist: #wall in front
-                print("Turning left")
-                self.turn(math.pi/2)
+                print("Turning left for front")
+                self.turn(1.2)
                 self.avoid = False
             elif self.regions['fright'] > self.dist and self.regions['front'] > self.dist and self.regions['fleft'] < self.dist: #wall on front-left
-                print("Turning right")
-                self.turn(-math.pi/4)
+                print("Turning right for front-left")
+                self.turn(-1.2)
                 self.avoid = False
             elif self.regions['fright'] < self.dist or self.regions['front'] < self.dist or self.regions['fleft'] > self.dist: #wall either in front and front-right
-                print("Turning left")
-                self.turn(math.pi/4)
+                print("Turning left for front and front-right")
+                self.turn(1.2)
                 self.avoid = False
             elif self.regions['fright'] > self.dist or self.regions['front'] < self.dist or self.regions['fleft'] < self.dist: #wall either in front and front-left
-                print("Turning right")
-                self.turn(-math.pi/4)
+                print("Turning right for front and front-left")
+                self.turn(-1.2)
                 self.avoid = False   
         
         if self.avoid == True:
