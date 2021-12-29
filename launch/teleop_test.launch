@@ -5,7 +5,7 @@
         <arg name="yaw" default="2.44" />
 
         <include file="$(find mr_robot_description)/launch/display.launch">
-                <arg name="rvizconfig" value="$(find assistive_teleop)/rviz/curve_tracer.rviz" />
+                <arg name="rvizconfig" value="$(find assistive_teleop)/rviz/assistive_teleop.rviz" />
         </include>
 
         <node args="-param robot_description -urdf -model mr_robot -x $(arg x_pos) -y $(arg y_pos) -z $(arg z_pos) -Y $(arg yaw)" name="spawn_urdf" pkg="gazebo_ros" type="spawn_model"/>
