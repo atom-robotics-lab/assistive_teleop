@@ -22,12 +22,11 @@ class obstacle_avoider:
         self.dist = 0.7
         self.wall_dist = 0.5
         self.avoid = False
+        self.message = Twist()
+        self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
 
     def turn(self, z):
-        self.message
-        self.message.linear.x = 0.2
-        self.message.angular.z = z
-        self.pub.publish(self.message)
+        self.move(0.2 , z)
 
     def laser_callback(self, msg): 
         self.regions = { 
@@ -76,23 +75,21 @@ class obstacle_avoider:
         print("fright = " + str(self.regions['fright']))
         if self.regions['front'] < self.wall_dist or self.regions['fleft'] < self.wall_dist or self.regions['fright'] < self.wall_dist:
             print("obstacle detected")
-            self.message.linear.x = 0
-            #self.message.angular.z = 0
-            self.pub.publish(self.message)
+            self.move(0.0, 0.0)
             self.obstacle_avoid()
 
     def demo_controller(self):
-        self.message = Twist()
-        self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
         self.rate = rospy.Rate(15)
 
         while not rospy.is_shutdown():
-            self.message.linear.x = 0.3
-            self.message.angular.z = 0.0
-            self.pub.publish(self.message)
+            self.move(0.3, 0.0)
             self.check_obstacle()
             self.rate.sleep()
 
+    def move(self, linear, angular):
+        self.message.linear.x = linear
+        self.message.angular.z = angular
+        self.pub.publish(self.message)
 
 if __name__ == "__main__":
     avoider = obstacle_avoider()
