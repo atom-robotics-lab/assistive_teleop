@@ -1,14 +1,20 @@
+#! /usr/bin/env python3
+
 import rospy
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 import numpy as np
 from tf.transformations import euler_from_quaternion
 
-class obstacke_avoider:
+class Robot_Controller:
     #initialised values 
     def __init__(self):
+
+        rospy.init_node('controller')
+        self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+        rospy.Subscriber('/odom', Odometry, self.odom_callback)
         self.pose = []
-        self.state
+        self.state = None
         self.velocity_msg = Twist()
         self.pub = None
         self.d = 1.0
@@ -87,44 +93,11 @@ class obstacke_avoider:
             elif position_error < self.dist_precision:
                 rospy.loginfo("GOAL REACHED")
                 self.state=2
-    def control_loop(self):
-       
-        rospy.init_node('controller')
 
-        self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
-        
-        rospy.Subscriber('/odom', Odometry, self.odom_callback)
-        
-        rate = rospy.Rate(10)
-        
-        path_x, path_y = self.waypoints(1000)
 
-        path_waypoints = zip(path_x, path_y)
-        rospy.loginfo(path_waypoints)
-        rospy.loginfo(len(path_waypoints))
-
-        while not rospy.is_shutdown():
-            if self.pose: 
-                if self.d_state == 0:
-                    if self.w_state == 0:
-            
-                       for (x, y) in path_waypoints:
-                            self.state = 0
-                            rospy.loginfo("Moving to point: " + str(x) + "," + str(y))
-
-                            self.goto(round(x, 2), round(y, 2))
-
-                            if self.w_state != 0:
-                               break                     
-                if self.d_state == 1:
-                  self.state=0
-                  self.goto(12.5,0.17)
-
-                  break    
-                rate.sleep()
-            self.move(0,0) 
-       
-       
+if __name__ == "__main__":
+    Robot = Robot_Controller()
+    Robot.goto(5,5)
            
                    
 
