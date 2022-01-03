@@ -4,7 +4,7 @@ import rospy
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import Odometry
-import math
+from goto import Robot_Controller
 
 class obstacle_avoider:
 
@@ -78,7 +78,7 @@ class obstacle_avoider:
         if self.avoid == True:
             #call the goto function as the wall is avoided
             print("calling the goto function now")
-            self.demo_controller()
+            self.goto(3, 5)
 
     def check_obstacle(self):
         print("front = " + str(self.regions['front']))
