@@ -4,7 +4,6 @@ import rospy
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import Odometry
-from goto import Robot_Controller
 
 class obstacle_avoider:
 
@@ -17,10 +16,10 @@ class obstacle_avoider:
             'fleft': 0, 
             'left': 0, 
             }
-        rospy.init_node('obstacle_avoider')
+        #rospy.init_node('obstacle_avoider')
         rospy.Subscriber('/laser/scan', LaserScan, self.laser_callback)
-        self.dist = 1.0
-        self.dist2 = 1.131
+        self.dist = 0.8
+        self.dist2 = 0.7
         self.wall_dist = 0.8
         self.avoid = False
         self.message = Twist()
@@ -47,44 +46,43 @@ class obstacle_avoider:
                 self.avoid = True
             elif self.regions['fright'] < self.dist2 and self.regions['front'] > self.dist and self.regions['fleft'] > self.dist2: #wall on front-right
                 print("Turning Left for front-right")
-                self.move(0.1, 0.3)
+                self.move(0.0, 0.3)
                 self.avoid = False
             elif self.regions['fright'] > self.dist2 and self.regions['front'] < self.dist and self.regions['fleft'] > self.dist2: #wall in front
                 print("Turning left for front")
-                self.move(0.1, 0.3)
+                self.move(0.0, 0.3)
                 self.avoid = False
             elif self.regions['fright'] > self.dist2 and self.regions['front'] > self.dist and self.regions['fleft'] < self.dist2: #wall on front-left
                 print("Turning right for front-left")
-                self.move(0.1, -0.3)
+                self.move(0.0, -0.3)
                 self.avoid = False
             elif self.regions['fright'] < self.dist2 and self.regions['front'] < self.dist and self.regions['fleft'] > self.dist2: #wall in front and front-right
                 print("Turning left for front and front-right")
-                self.move(0.1, 0.3)
+                self.move(0.0, 0.3)
                 self.avoid = False
             elif self.regions['fright'] > self.dist2 and self.regions['front'] < self.dist and self.regions['fleft'] < self.dist2: #wall in front and front-left
                 print("Turning right for front and front-left")
-                self.move(0.1, -0.3)
+                self.move(0.0, -0.3)
                 self.avoid = False 
             elif self.regions['fright'] < self.dist2 and self.regions['front'] < self.dist and self.regions['fleft'] < self.dist2: #wall everywhere
                 if self.regions['fleft'] < self.regions['fright']:
                     print("Turning right for front and front-left and ront-right")
-                    self.move(0.1, -0.3)
+                    self.move(0.0, -0.3)
                     self.avoid = False   
                 elif self.regions['fleft'] > self.regions['fright']:
                     print("Turning left for front and front-left and ront-right")
-                    self.move(0.1, 0.3)
+                    self.move(0.0, 0.3)
                     self.avoid = False
         
         if self.avoid == True:
             #call the goto function as the wall is avoided
             print("calling the goto function now")
-            self.goto(3, 5)
 
     def check_obstacle(self):
         print("front = " + str(self.regions['front']))
         print("fleft = " + str(self.regions['fleft']))
         print("fright = " + str(self.regions['fright']))
-        if self.regions['front'] < self.wall_dist or self.regions['fleft'] < self.wall_dist or self.regions['fright'] < self.wall_dist:
+        if self.regions['front'] < self.wall_dist or self.regions['fleft'] < self.dist2 or self.regions['fright'] < self.dist2:
             print("obstacle detected")
             self.move(0.0, 0.0)
             self.obstacle_avoid()
@@ -102,7 +100,6 @@ class obstacle_avoider:
         self.message.angular.z = angular
         self.pub.publish(self.message)
 
-if __name__ == "__main__":
-    avoider = obstacle_avoider()
-    avoider.demo_controller()
-    #rospy.spin()
+#if __name__ == "__main__":
+    #avoider = obstacle_avoider()
+    #avoider.demo_controller()
