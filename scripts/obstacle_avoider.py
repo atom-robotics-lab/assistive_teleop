@@ -21,7 +21,8 @@ class obstacle_avoider:
         self.dist = 0.8
         self.dist2 = 0.7
         self.wall_dist = 0.8
-        self.avoid = False
+        self.avoid1 = False
+        self.avoid2 = False
         self.message = Twist()
         self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
 
@@ -36,47 +37,52 @@ class obstacle_avoider:
 
     def obstacle_avoid(self):
         print("obstacle avoider started")
-        self.avoid = False
+        self.avoid1 = False
 
-        while self.avoid == False:
+        while self.avoid1 == False:
             print(self.regions)
             #print("into while loop")
             if self.regions['fright'] > self.dist2 and self.regions['front'] > self.dist and self.regions['fleft'] > self.dist2: #no wall detected
                 print("Wall Avoided")
-                self.avoid = True
+                self.avoid1 = True
             elif self.regions['fright'] < self.dist2 and self.regions['front'] > self.dist and self.regions['fleft'] > self.dist2: #wall on front-right
                 print("Turning Left for front-right")
                 self.move(0.0, 0.3)
-                self.avoid = False
+                self.avoid1 = False
             elif self.regions['fright'] > self.dist2 and self.regions['front'] < self.dist and self.regions['fleft'] > self.dist2: #wall in front
                 print("Turning left for front")
                 self.move(0.0, 0.3)
-                self.avoid = False
+                self.avoid1 = False
             elif self.regions['fright'] > self.dist2 and self.regions['front'] > self.dist and self.regions['fleft'] < self.dist2: #wall on front-left
                 print("Turning right for front-left")
                 self.move(0.0, -0.3)
-                self.avoid = False
+                self.avoid1 = False
             elif self.regions['fright'] < self.dist2 and self.regions['front'] < self.dist and self.regions['fleft'] > self.dist2: #wall in front and front-right
                 print("Turning left for front and front-right")
                 self.move(0.0, 0.3)
-                self.avoid = False
+                self.avoid1 = False
             elif self.regions['fright'] > self.dist2 and self.regions['front'] < self.dist and self.regions['fleft'] < self.dist2: #wall in front and front-left
                 print("Turning right for front and front-left")
                 self.move(0.0, -0.3)
-                self.avoid = False 
+                self.avoid1 = False 
             elif self.regions['fright'] < self.dist2 and self.regions['front'] < self.dist and self.regions['fleft'] < self.dist2: #wall everywhere
                 if self.regions['fleft'] < self.regions['fright']:
                     print("Turning right for front and front-left and ront-right")
                     self.move(0.0, -0.3)
-                    self.avoid = False   
+                    self.avoid1 = False   
                 elif self.regions['fleft'] > self.regions['fright']:
                     print("Turning left for front and front-left and ront-right")
                     self.move(0.0, 0.3)
-                    self.avoid = False
+                    self.avoid1 = False
         
-        if self.avoid == True:
+        if self.avoid1 == True:
             #call the goto function as the wall is avoided
-            print("calling the goto function now")
+            #print("calling the goto function now")
+            self.avoid2 = False
+            while self.avoid2 == False:
+                if self.regions['right'] <= 0.7 or self.regions['left'] <= 0.7: #wall on either left or right
+                    self.move(1.0, 0.0)
+                    self.avoid2 = True
 
     def check_obstacle(self):
         print("front = " + str(self.regions['front']))
