@@ -5,6 +5,7 @@ from nav_msgs.msg import Odometry
 import numpy as np
 from tf.transformations import euler_from_quaternion
 from sensor_msgs.msg import LaserScan
+from assistive_teleop import obstacle_presence
 
 class Robot_Controller:
     #initialised values
@@ -13,6 +14,7 @@ class Robot_Controller:
         rospy.init_node('controller')
         self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
         rospy.Subscriber('/odom', Odometry, self.odom_callback)
+        
         self.pose = []
         self.state = 0
         self.velocity_msg = Twist()
