@@ -32,7 +32,7 @@ class Object_Avoider:
         self.dist = 0.8
         self.dist2 = 0.7
         self.wall_dist = 0.8
-        rospy.init_node('reading_laser')
+        rospy.init_node('Object_Avoider')
         self.pub_ = rospy.Publisher('/cmd_vel', Twist, queue_size=1)        
         self.sub = rospy.Subscriber('/laser/scan', LaserScan, self.clbk_laser)
         rospy.Subscriber('/odom', Odometry, self.odom_callback)
