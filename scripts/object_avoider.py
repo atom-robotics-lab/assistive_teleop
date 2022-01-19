@@ -10,7 +10,7 @@ from tf.transformations import euler_from_quaternion
 
 import math
 
-class follow_wall:
+class Object_Avoider:
 
     def __init__(self):
         self.pub_ = None
@@ -29,6 +29,9 @@ class follow_wall:
         }
         self.message = Twist()
         self.d = 1.0
+        self.dist = 0.8
+        self.dist2 = 0.7
+        self.wall_dist = 0.8
         rospy.init_node('reading_laser')
         self.pub_ = rospy.Publisher('/cmd_vel', Twist, queue_size=1)        
         self.sub = rospy.Subscriber('/laser/scan', LaserScan, self.clbk_laser)
@@ -128,6 +131,14 @@ class follow_wall:
             self.pub_.publish(msg)
             
             rate.sleep()
+
+    def check_obstacle(self):
+        print("front = " + str(self.regions['front']))
+        print("fleft = " + str(self.regions['fleft']))
+        print("fright = " + str(self.regions['fright']))
+        if self.regions['front'] < self.wall_dist or self.regions['fleft'] < self.dist2 or self.regions['fright'] < self.dist2:
+            print("obstacle detected")
+            self.move(0.0, 0.0)
 
 if __name__ == '__main__':
     obs_state = follow_wall()
