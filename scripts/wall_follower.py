@@ -6,6 +6,7 @@ from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from tf import transformations
+from tf.transformations import euler_from_quaternion
 
 import math
 
@@ -31,6 +32,14 @@ class follow_wall:
         rospy.init_node('reading_laser')
         self.pub_ = rospy.Publisher('/cmd_vel', Twist, queue_size=1)        
         self.sub = rospy.Subscriber('/laser/scan', LaserScan, self.clbk_laser)
+        rospy.Subscriber('/odom', Odometry, self.odom_callback)
+
+    def odom_callback(self,data):
+      x = data.pose.pose.orientation.x
+      y = data.pose.pose.orientation.y
+      z = data.pose.pose.orientation.z
+      w = data.pose.pose.orientation.w
+      self.pose = [data.pose.pose.position.x, data.pose.pose.position.y, euler_from_quaternion([x,y,z,w])[2]]
 
     def clbk_laser(self, msg):
         self.regions = {
