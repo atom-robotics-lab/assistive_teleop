@@ -29,9 +29,6 @@ class Object_Avoider:
         }
         self.message = Twist()
         self.d = 1.0
-        self.dist = 0.8
-        self.dist2 = 0.7
-        self.wall_dist = 0.8
         rospy.init_node('Object_Avoider')
         self.pub_ = rospy.Publisher('/cmd_vel', Twist, queue_size=1)        
         self.sub = rospy.Subscriber('/laser/scan', LaserScan, self.clbk_laser)
@@ -55,11 +52,15 @@ class Object_Avoider:
         self.take_action()
 
     def change_state(self, state):
-        self.state_
-        self.state_dict_
         if state is not self.state_:
             print ('Wall follower - [%s] - %s' % (state, self.state_dict_[state]))
             self.state_ = state
+
+    def move(self,linear,angular):
+        velocity_msg = Twist()
+        velocity_msg.linear.x = linear
+        velocity_msg.angular.z = angular 
+        self.pub_.publish(velocity_msg)
 
     def take_action(self):
         state_description = ''
@@ -93,50 +94,34 @@ class Object_Avoider:
             rospy.loginfo(self.regions)
 
     def find_wall(self):
-        msg = Twist()
-        msg.linear.x = 0.2
-        msg.angular.z = -0.3
-        return msg
+        self.move(0.2, -0.3)
 
     def turn_left(self):
-        msg = Twist()
-        msg.angular.z = 0.3
-        return msg
+        self.move(0, 0.3)
 
     def follow_the_wall(self):
-        self.regions
+        self.move(0.5, 0)
         
-        msg = Twist()
-        msg.linear.x = 0.5
-        return msg
 
     def _state_(self):
         
         rate = rospy.Rate(15)
         while not rospy.is_shutdown():
-            print("front :" + str(self.regions['front']))
-            print("fright :" + str(self.regions['fright']))
-            print("fleft :" + str(self.regions['fleft']))
-            msg = Twist()
+    
             if self.state_ == 0:
-                msg = self.find_wall()
+                self.find_wall()
             elif self.state_ == 1:
-                msg = self.turn_left()
+                self.turn_left()
             elif self.state_ == 2:
-                msg = self.follow_the_wall()
+                self.follow_the_wall()
                 pass
             else:
                 rospy.logerr('Unknown state!')
-            
-            self.pub_.publish(msg)
-            
+                        
             rate.sleep()
 
     def check_obstacle(self):
-        print("front = " + str(self.regions['front']))
-        print("fleft = " + str(self.regions['fleft']))
-        print("fright = " + str(self.regions['fright']))
-        if self.regions['front'] < self.wall_dist or self.regions['fleft'] < self.dist2 or self.regions['fright'] < self.dist2:
+        if self.regions['front'] < self.d or self.regions['fleft'] < self.d or self.regions['fright'] < self.d:
             print("obstacle detected")
             self.move(0.0, 0.0)
 
