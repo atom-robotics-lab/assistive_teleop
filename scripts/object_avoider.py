@@ -126,5 +126,5 @@ class Object_Avoider:
             self.move(0.0, 0.0)
 
 if __name__ == '__main__':
-    obs_state = follow_wall()
+    obs_state = Object_Avoider()
     obs_state._state_()
