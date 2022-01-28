@@ -5,7 +5,7 @@ from nav_msgs.msg import Odometry
 import numpy as np
 from tf.transformations import euler_from_quaternion
 from sensor_msgs.msg import LaserScan
-from assistive_teleop import obstacle_presence
+#from assistive_teleop import obstacle_presence
 
 class Robot_Controller:
     #initialised values
