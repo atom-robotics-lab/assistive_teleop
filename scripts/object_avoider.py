@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 
 # import ros stuff
+import math
 import rospy
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Twist
@@ -14,6 +15,7 @@ class Object_Avoider:
 
     def __init__(self):
         self.pub_ = None
+        self.all_regions = []
         self.regions = {
             'right': 0,
             'fright': 0,
@@ -29,10 +31,24 @@ class Object_Avoider:
         }
         self.message = Twist()
         self.d = 1.0
+        self.footprint = 1.0
         rospy.init_node('Object_Avoider')
         self.pub_ = rospy.Publisher('/cmd_vel', Twist, queue_size=1)        
         self.sub = rospy.Subscriber('/laser/scan', LaserScan, self.clbk_laser)
         rospy.Subscriber('/odom', Odometry, self.odom_callback)
+
+    def angle_calc(self): #for calculating a threshold angle.
+        pi = 3.1415926
+        theta = round((math.atan((self.footprint/2)/self.d) * 180)/pi)
+        return theta
+
+    def angle_checker(self, phi):    #returns True or False depending on whether an obstacle is in path, takes angle as an input. 
+        rospy.wait_for_message("/laser/scan", LaserScan)
+
+        if min(min(self.all_regions[phi-self.angle_calc():phi]), 10) < 10 or min(min(self.all_regions[phi:phi+self.angle_calc()]), 10) < 10:
+            return True
+        else:
+            return False
 
     def odom_callback(self,data):
       x = data.pose.pose.orientation.x
@@ -49,6 +65,7 @@ class Object_Avoider:
             'fleft':  min(min(msg.ranges[25:75]), 10), 
             'left':   min(min(msg.ranges[76:125]), 10),
         }
+        self.all_regions = msg.ranges
         self.take_action()
 
     def change_state(self, state):
