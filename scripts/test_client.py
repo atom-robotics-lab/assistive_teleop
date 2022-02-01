@@ -15,9 +15,9 @@ class drive_client:
     print('waiting for server')
     self.client.wait_for_server()
     print('server started')
-    goal = AvoidObstacleGoal()
-    goal.angle = 5
-    self.client.send_goal(goal, feedback_cb = self.object_cb)
+    self.goal = AvoidObstacleGoal()
+    self.goal.angle = 5
+    self.client.send_goal(self.goal, feedback_cb = self.object_cb)
 
   
   def object_cb(self, feedback):
@@ -28,13 +28,15 @@ class drive_client:
     drive_task = 0
 
     while drive_task != 10:
+      drive_task += 1
       if self.ob_status:
         print('stoped Object Avoidance in Progress')
         self.client.wait_for_result()
-
+        print('Clearance recieved, Resuming Task')
+        self.client.send_goal(self.goal, feedback_cb = self.object_cb)
       else:
-        drive_task += 1
         print('task completed {}/10'.format(drive_task)) 
+
       rospy.sleep(2)
 
       rate.sleep()

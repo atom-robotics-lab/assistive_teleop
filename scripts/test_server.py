@@ -22,10 +22,9 @@ class ObstacleAvoidanceServer:
         self.feedback.obstacle_clearance = True
         self.server.publish_feedback(self.feedback)
         print('obstacle detected: {}'.format(index))
-        rospy.sleep(5)
+        rospy.sleep(3)
         print('obstacle avoided: {}'.format(index))
         self.server.set_succeeded()
-        index +=1
       
       else:
         print('no obstacle detected: {}'.format(index))
