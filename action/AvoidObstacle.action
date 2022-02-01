@@ -1,5 +1,5 @@
 uint32 angle
 ---
-bool obstacle_presence
----
 bool obstacle_clearance 
+---
+bool obstacle_presence
