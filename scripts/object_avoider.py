@@ -36,8 +36,9 @@ class Object_Avoider:
         self.pub_ = rospy.Publisher('/cmd_vel', Twist, queue_size=1)        
         self.sub = rospy.Subscriber('/laser/scan', LaserScan, self.clbk_laser)
         rospy.Subscriber('/odom', Odometry, self.odom_callback)
+        self.clearance_angle = angle_calculate()
 
-    def angle_calc(self): #for calculating a threshold angle.
+    def angle_calculate(self): #for calculating a threshold angle.
         pi = 3.1415926
         theta = round((math.atan((self.footprint/2)/self.d) * 180)/pi)
         return theta
@@ -45,7 +46,7 @@ class Object_Avoider:
     def angle_checker(self, phi):    #returns True or False depending on whether an obstacle is in path, takes angle as an input. 
         rospy.wait_for_message("/laser/scan", LaserScan)
 
-        if min(min(self.all_regions[phi-self.angle_calc():phi]), 10) < 10 or min(min(self.all_regions[phi:phi+self.angle_calc()]), 10) < 10:
+        if min(min(self.all_regions[phi-self.clearance_angle:phi]), 10) < 10 or min(min(self.all_regions[phi:phi+self.clearance_angle]), 10) < 10:
             return True
         else:
             return False
