@@ -86,7 +86,7 @@ class Robot_Controller:
                 self.move(0,0)
                 self.client.wait_for_result()
             else:
-                pass
+                self.client.cancel_all_goals()
             
             theta_goal = np.arctan((dest_y - self.pose[1])/(dest_x - self.pose[0]))   #slope
             if theta_goal>0:

@@ -146,15 +146,20 @@ class Object_Avoider:
 
     def follow_the_wall(self):
         self.move(0.5, 0)
-        
+
+    def distance_shorter(self):
+        dist1 = sqrt( (x2 - x1)**2 + (y2 - y1)**2 )
+        dist2 = sqrt( (x2 - x1)**2 + (y2 - y1)**2 )
 
     def Obstacle_state(self):
         pi = 3.1415926
         self.result = AvoidObstacleResult()
         self.theta = int(round(np.arctan((self.goal[1] - self.pose[1])/(self.goal[0] - self.pose[0]))*180/pi))
+        initial_theta = self.theta
         print(self.theta)
         rate = rospy.Rate(15)
-        while self.angle_checker(self.theta):
+        count = 0
+        while self.angle_checker(self.theta) or self.regions['right'] < self.d or self.regions['fright'] < self.d:
             print("while loop running (3)")
             if self.state_ == 0:
                 self.find_wall()
@@ -162,12 +167,20 @@ class Object_Avoider:
                 self.turn_left()
             elif self.state_ == 2:
                 self.follow_the_wall()
-                pass
             else:
                 rospy.logerr('Unknown state!')
 
+            if self.theta == initial_theta:
+                if count > 3:
+                    break
+                else:
+                    pass
+
+
             self.theta = int(round(np.arctan((self.goal[1] - self.pose[1])/(self.goal[0] - self.pose[0]))*180/pi))           
             rate.sleep()
+        print("angle_checker: ", self.angle_checker(self.theta), "left: ", self.regions['left'], "fleft: ", self.regions['fleft'])
+        print("state:", self.state_)
         print("outside while loop (4)")
         self.result.obstacle_clearance = True
         self.server.set_succeeded(self.result)
