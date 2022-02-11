@@ -1,0 +1,14 @@
+0bstacle_avoider :
+  theta_precision : 0.16  
+  dist_precision : 0.35
+  
+ 
+theta_derivative : 0.1
+theta_integral : 0.1
+
+ 
+
+self.dist : 0.8
+self.dist2 : 0.7
+self.wall_dist : 0.8
+pid : {p: 0.8 , i: 0.1 , d: 0.1 }
