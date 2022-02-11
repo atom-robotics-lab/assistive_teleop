@@ -8,6 +8,11 @@ from nav_msgs.msg import Odometry
 from tf import transformations
 from tf.transformations import euler_from_quaternion
 
+import numpy as np
+import actionlib
+import roslib
+from assistive_teleop.msg import AvoidObstacleAction, AvoidObstacleFeedback, AvoidObstacleResult
+
 import math
 
 class Object_Avoider:
@@ -21,6 +26,7 @@ class Object_Avoider:
             'fleft': 0,
             'left': 0,
         }
+        self.pose =[]
         self.state_ = 0
         self.state_dict_ = {
             0: 'find the wall',
@@ -29,10 +35,48 @@ class Object_Avoider:
         }
         self.message = Twist()
         self.d = 1.0
+        self.footprint = 1.0
         rospy.init_node('Object_Avoider')
         self.pub_ = rospy.Publisher('/cmd_vel', Twist, queue_size=1)        
         self.sub = rospy.Subscriber('/laser/scan', LaserScan, self.clbk_laser)
         rospy.Subscriber('/odom', Odometry, self.odom_callback)
+
+
+        self.clearance_angle = self.angle_calculate()
+        self.server = actionlib.SimpleActionServer('Avoid_Obstacle_server', AvoidObstacleAction, self.execute, False)
+        self.server.start()
+        print('action server starting')
+
+
+
+    def angle_calculate(self): #for calculating a threshold angle.
+        pi = 3.1415926
+        theta = round((math.atan((self.footprint/2)/self.d) * 180)/pi)
+        return theta
+
+    def angle_checker(self, phi):    #returns True or False depending on whether an obstacle is in path, takes angle as an input. 
+        rospy.wait_for_message("/laser/scan", LaserScan)
+        print("phi: ", phi, "clearance_angle: ", self.clearance_angle)
+
+        if phi + self.clearance_angle > 360:
+            angle = phi + self.clearance_angle - 360
+            if min(min(self.all_regions[0:angle]+self.all_regions[phi-self.clearance_angle:360]), 10) < 10:
+                return True
+            else:
+                return False
+
+        elif phi - self.clearance_angle < 0:
+            angle = 360 -(abs(phi - self.clearance_angle))
+            if min(min(self.all_regions[0:phi+self.clearance_angle]+self.all_regions[angle:360]), 10) < 10:
+                return True
+            else:
+                return False
+
+        else:
+            if min(min(self.all_regions[phi-self.clearance_angle:phi+self.clearance_angle]), 10) < 10:
+                return True
+            else:
+                return False
 
     def odom_callback(self,data):
       x = data.pose.pose.orientation.x
@@ -49,6 +93,7 @@ class Object_Avoider:
             'fleft':  min(min(msg.ranges[25:75]), 10), 
             'left':   min(min(msg.ranges[76:125]), 10),
         }
+        self.all_regions = msg.ranges
         self.take_action()
 
     def change_state(self, state):
@@ -103,11 +148,14 @@ class Object_Avoider:
         self.move(0.5, 0)
         
 
-    def _state_(self):
-        
+    def Obstacle_state(self):
+        pi = 3.1415926
+        self.result = AvoidObstacleResult()
+        self.theta = int(round(np.arctan((self.goal[1] - self.pose[1])/(self.goal[0] - self.pose[0]))*180/pi))
+        print(self.theta)
         rate = rospy.Rate(15)
-        while not rospy.is_shutdown():
-    
+        while self.angle_checker(self.theta):
+            print("while loop running (3)")
             if self.state_ == 0:
                 self.find_wall()
             elif self.state_ == 1:
@@ -117,14 +165,40 @@ class Object_Avoider:
                 pass
             else:
                 rospy.logerr('Unknown state!')
-                        
+
+            self.theta = int(round(np.arctan((self.goal[1] - self.pose[1])/(self.goal[0] - self.pose[0]))*180/pi))           
             rate.sleep()
+        print("outside while loop (4)")
+        self.result.obstacle_clearance = True
+        self.server.set_succeeded(self.result)
+
 
     def check_obstacle(self):
-        if self.regions['front'] < self.d or self.regions['fleft'] < self.d or self.regions['fright'] < self.d:
-            print("obstacle detected")
-            self.move(0.0, 0.0)
+        if self.regions['front'] < self.d:
+            return True
+        else:
+            return False
+
+
+    def execute(self, goal):
+        print("self.goal")
+        self.goal = goal.pose
+        print(self.goal)
+        rate = rospy.Rate(10)
+        self.feedback = AvoidObstacleFeedback()
+
+        while not self.check_obstacle():
+            print("while loop running (1)")
+            self.feedback.obstacle_presence = False
+            self.server.publish_feedback(self.feedback)
+
+            rate.sleep()
+        print("outside while loop (2)")
+        self.feedback.obstacle_presence = True
+        self.server.publish_feedback(self.feedback)
+
+        self.Obstacle_state()
+
 
 if __name__ == '__main__':
-    obs_state = Object_Avoider()
-    obs_state._state_()
+    obs_avoider = Object_Avoider()

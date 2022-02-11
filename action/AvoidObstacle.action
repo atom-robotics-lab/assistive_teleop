@@ -1,5 +1,5 @@
 uint32 angle
-float pose[]
+float32[] pose
 ---
 bool obstacle_clearance 
 ---

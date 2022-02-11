@@ -22,13 +22,13 @@ class Robot_Controller:
         self.velocity_msg = Twist()
         
         self.ob_status = False
-        self.client = actionlib.SimpleActionClient('Avoid_Obstacle', AvoidObstacleAction)
+        self.client = actionlib.SimpleActionClient('Avoid_Obstacle_server', AvoidObstacleAction)
         print('waiting for server')
         self.client.wait_for_server()
         print('server started')
 
     def object_cb(self, feedback):
-        self.ob_status = feedback.obstacle_clearance
+        self.ob_status = feedback.obstacle_presence
 
     def request(self, feedback):
         if self.ob_status == False:
@@ -68,8 +68,9 @@ class Robot_Controller:
          3) state = 2; goal reached '''  
 
         self.goal = AvoidObstacleGoal()
-        self.goal.pose[0] = dest_x
-        self.goal.pose[1] = dest_y
+        self.goal.pose.append(dest_x)
+        self.goal.pose.append(dest_y)
+        
         self.client.send_goal(self.goal, feedback_cb = self.object_cb) 
         
         rate = rospy.Rate(10)
@@ -121,12 +122,13 @@ class Robot_Controller:
                 elif position_error < dist_precision:
                     rospy.loginfo("GOAL REACHED")
                     self.move(0,0)
-                    self.state=2 
+                    self.state=2
+                    self.client.cancel_all_goals() 
 
         rospy.sleep(10)
         rate.sleep()
 
 if __name__ == "__main__":
     Robot = Robot_Controller()
-    Robot.goto(3,2)
+    Robot.goto(4,2)
     
