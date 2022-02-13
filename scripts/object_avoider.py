@@ -39,13 +39,13 @@ class Object_Avoider:
         rospy.init_node('Object_Avoider')
         self.pub_ = rospy.Publisher('/cmd_vel', Twist, queue_size=1)        
         self.sub = rospy.Subscriber('/laser/scan', LaserScan, self.clbk_laser)
+        rospy.wait_for_message("/laser/scan", LaserScan)
         rospy.Subscriber('/odom', Odometry, self.odom_callback)
-
 
         self.clearance_angle = self.angle_calculate()
         self.server = actionlib.SimpleActionServer('Avoid_Obstacle_server', AvoidObstacleAction, self.execute, False)
         self.server.start()
-        print('action server starting')
+        print('**** Obstacle Avoider action server starting ****')
 
 
 
@@ -55,8 +55,7 @@ class Object_Avoider:
         return theta
 
     def angle_checker(self, phi):    #returns True or False depending on whether an obstacle is in path, takes angle as an input. 
-        rospy.wait_for_message("/laser/scan", LaserScan)
-        print("phi: ", phi, "clearance_angle: ", self.clearance_angle)
+        print("Angle to Goal: ", phi)
 
         if phi + self.clearance_angle > 360:
             angle = phi + self.clearance_angle - 360
@@ -94,7 +93,7 @@ class Object_Avoider:
             'left':   min(min(msg.ranges[76:125]), 10),
         }
         self.all_regions = msg.ranges
-        self.take_action()
+        #self.take_action()
 
     def change_state(self, state):
         if state is not self.state_:
@@ -151,7 +150,7 @@ class Object_Avoider:
         dist1 = sqrt( (x2 - x1)**2 + (y2 - y1)**2 )
         dist2 = sqrt( (x2 - x1)**2 + (y2 - y1)**2 )
 
-    def Obstacle_state(self):
+    def AvoidObstacle(self):
         pi = 3.1415926
         self.result = AvoidObstacleResult()
         self.theta = int(round(np.arctan((self.goal[1] - self.pose[1])/(self.goal[0] - self.pose[0]))*180/pi))
@@ -159,8 +158,9 @@ class Object_Avoider:
         print(self.theta)
         rate = rospy.Rate(15)
         count = 0
+        print("Avoiding Obstacle")
         while self.angle_checker(self.theta) or self.regions['right'] < self.d or self.regions['fright'] < self.d:
-            print("while loop running (3)")
+            self.take_action()
             if self.state_ == 0:
                 self.find_wall()
             elif self.state_ == 1:
@@ -176,12 +176,13 @@ class Object_Avoider:
                 else:
                     pass
 
-
             self.theta = int(round(np.arctan((self.goal[1] - self.pose[1])/(self.goal[0] - self.pose[0]))*180/pi))           
             rate.sleep()
+
         print("angle_checker: ", self.angle_checker(self.theta), "left: ", self.regions['left'], "fleft: ", self.regions['fleft'])
         print("state:", self.state_)
-        print("outside while loop (4)")
+        print("----Obstacle Avoided----")
+        self.send_feedback(False)
         self.result.obstacle_clearance = True
         self.server.set_succeeded(self.result)
 
@@ -192,6 +193,10 @@ class Object_Avoider:
         else:
             return False
 
+    def send_feedback(self, value):
+        self.feedback.obstacle_presence = value
+        self.server.publish_feedback(self.feedback)
+
 
     def execute(self, goal):
         print("self.goal")
@@ -201,16 +206,14 @@ class Object_Avoider:
         self.feedback = AvoidObstacleFeedback()
 
         while not self.check_obstacle():
-            print("while loop running (1)")
-            self.feedback.obstacle_presence = False
-            self.server.publish_feedback(self.feedback)
+            print("No Obstacle Detected")
+            self.send_feedback(False)
 
             rate.sleep()
-        print("outside while loop (2)")
-        self.feedback.obstacle_presence = True
-        self.server.publish_feedback(self.feedback)
+        print("!!! Obstacle Detected !!!")
+        self.send_feedback(True)
 
-        self.Obstacle_state()
+        self.AvoidObstacle()
 
 
 if __name__ == '__main__':

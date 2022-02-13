@@ -23,7 +23,7 @@ class Robot_Controller:
         
         self.ob_status = False
         self.client = actionlib.SimpleActionClient('Avoid_Obstacle_server', AvoidObstacleAction)
-        print('waiting for server')
+        print('waiting for avoid obstacle server')
         self.client.wait_for_server()
         print('server started')
 
@@ -82,11 +82,11 @@ class Robot_Controller:
         
         while self.state != 2:
             if self.ob_status == True:
-                print("sending request to server/ obstacle avoider")      #send request to server
+                print("Obstacle Detected, Stopping the BOT")
                 self.move(0,0)
                 self.client.wait_for_result()
-            else:
-                self.client.cancel_all_goals()
+            #else:
+            #    self.client.cancel_all_goals()
             
             theta_goal = np.arctan((dest_y - self.pose[1])/(dest_x - self.pose[0]))   #slope
             if theta_goal>0:
@@ -124,6 +124,7 @@ class Robot_Controller:
                     self.move(0,0)
                     self.state=2
                     self.client.cancel_all_goals() 
+                    print("cancelling Obstacle Avoider Goal")
 
         rospy.sleep(10)
         rate.sleep()
