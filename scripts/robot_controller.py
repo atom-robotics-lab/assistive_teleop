@@ -74,8 +74,8 @@ class Robot_Controller:
         
         rate = rospy.Rate(10)
 
-        theta_precision = 0.16  
-        dist_precision = 0.35
+        self.theta_precision = rospy.get_param("Obstacle_avoider/theta_precision")
+        self.dist_precision = rospy.get_param("Obstacle_avoider/dist_precision")
         #wait for message
         rospy.wait_for_message("/odom",Odometry)
         
@@ -99,7 +99,7 @@ class Robot_Controller:
             if self.state == 0:
                 # if theta_error is greated than the required precision then fix the yaw by rotating the bot
                 # if required precision is reached then change current state to 1
-                if np.abs(theta_error) > theta_precision:   
+                if np.abs(theta_error) > self.theta_precision:   
                     rospy.loginfo("Fixing Yaw")
                     self.fix_yaw(theta_error, 1.7)
                 else:
@@ -112,13 +112,13 @@ class Robot_Controller:
                 # if position error is less than required precision & bot is facing the goal, move towards goal in straight line
                 # else if it is not correctly oriented change state to 1
                 # if theta_precision and dist_precision are reached change state to 2 (goal reached)
-                if position_error > dist_precision and np.abs(theta_error) < theta_precision:
+                if position_error > self.dist_precision and np.abs(theta_error) < self.theta_precision:
                     rospy.loginfo("Moving Straight")
                     self.move_straight(position_error, 0.8)
-                elif np.abs(theta_error) > theta_precision:
+                elif np.abs(theta_error) > self.theta_precision:
                     rospy.loginfo("Going out of line!")
                     self.state = 0
-                elif position_error < dist_precision:
+                elif position_error < self.dist_precision:
                     rospy.loginfo("GOAL REACHED")
                     self.move(0,0)
                     self.state=2 

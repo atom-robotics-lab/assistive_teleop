@@ -28,7 +28,7 @@ class Object_Avoider:
             2: 'follow the wall',
         }
         self.message = Twist()
-        self.d = 1.0
+        self.D = rospy.get_param("Obstacle _avoider/pid/d")
         rospy.init_node('Object_Avoider')
         self.pub_ = rospy.Publisher('/cmd_vel', Twist, queue_size=1)        
         self.sub = rospy.Subscriber('/laser/scan', LaserScan, self.clbk_laser)
