@@ -54,28 +54,41 @@ class Object_Avoider:
         theta = round((math.atan((self.footprint/2)/self.d) * 180)/pi)
         return theta
 
-    def angle_checker(self, phi):    #returns True or False depending on whether an obstacle is in path, takes angle as an input. 
+
+    def angle_checker(self, phi):    #returns True or False depending on whether an obstacle is in path, takes angle as an input.
+        pi = 3.1415926 
+        phi = round(phi - (self.pose[2]*180/pi))
         print("Angle to Goal: ", phi)
 
         if phi + self.clearance_angle > 360:
             angle = phi + self.clearance_angle - 360
+            print(" 1 laser value: ", min(self.all_regions[0:phi+self.clearance_angle]+self.all_regions[angle:360]), "angle: ", phi+self.clearance_angle)
             if min(min(self.all_regions[0:angle]+self.all_regions[phi-self.clearance_angle:360]), 10) < 10:
+                print("True")
                 return True
             else:
+                print("False, 1")
                 return False
 
         elif phi - self.clearance_angle < 0:
             angle = 360 -(abs(phi - self.clearance_angle))
+            print(" 2 laser value: ", min(self.all_regions[0:phi+self.clearance_angle]+self.all_regions[angle:360]), "angle: ", phi+self.clearance_angle)
             if min(min(self.all_regions[0:phi+self.clearance_angle]+self.all_regions[angle:360]), 10) < 10:
+                print("True")
                 return True
             else:
+                print("False, 2")
                 return False
 
         else:
+            print(" 3 laser value: ", min(self.all_regions[0:phi+self.clearance_angle]+self.all_regions[angle:360]), "angle: ", phi+self.clearance_angle)
             if min(min(self.all_regions[phi-self.clearance_angle:phi+self.clearance_angle]), 10) < 10:
+                print("True")
                 return True
             else:
+                print("False, 3")
                 return False
+
 
     def odom_callback(self,data):
       x = data.pose.pose.orientation.x
@@ -154,12 +167,12 @@ class Object_Avoider:
         pi = 3.1415926
         self.result = AvoidObstacleResult()
         self.theta = int(round(np.arctan((self.goal[1] - self.pose[1])/(self.goal[0] - self.pose[0]))*180/pi))
-        initial_theta = self.theta
+
         print(self.theta)
         rate = rospy.Rate(15)
         count = 0
         print("Avoiding Obstacle")
-        while self.angle_checker(self.theta) or self.regions['right'] < self.d or self.regions['fright'] < self.d:
+        while self.angle_checker(self.theta):
             self.take_action()
             if self.state_ == 0:
                 self.find_wall()
@@ -169,12 +182,6 @@ class Object_Avoider:
                 self.follow_the_wall()
             else:
                 rospy.logerr('Unknown state!')
-
-            if self.theta == initial_theta:
-                if count > 3:
-                    break
-                else:
-                    pass
 
             self.theta = int(round(np.arctan((self.goal[1] - self.pose[1])/(self.goal[0] - self.pose[0]))*180/pi))           
             rate.sleep()

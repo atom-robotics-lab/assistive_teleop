@@ -131,5 +131,5 @@ class Robot_Controller:
 
 if __name__ == "__main__":
     Robot = Robot_Controller()
-    Robot.goto(4,2)
+    Robot.goto(6,3)
     
