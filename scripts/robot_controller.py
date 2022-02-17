@@ -56,7 +56,7 @@ class Robot_Controller:
     #Move straight to path 
     
     def move_straight(self,error, P):        
-        self.move(P * error, 0)
+        self.move(0.4, 0)
 
     #//Go to function
     def goto(self,dest_x, dest_y):
