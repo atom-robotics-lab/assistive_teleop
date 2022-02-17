@@ -81,7 +81,7 @@ class Object_Avoider:
                 return False
 
         else:
-            print(" 3 laser value: ", min(self.all_regions[0:phi+self.clearance_angle]+self.all_regions[angle:360]), "angle: ", phi+self.clearance_angle)
+            print(" 3 laser value: ", min(self.all_regions[phi-self.clearance_angle:phi+self.clearance_angle]), "angle: ", phi+self.clearance_angle)
             if min(min(self.all_regions[phi-self.clearance_angle:phi+self.clearance_angle]), 10) < 10:
                 print("True")
                 return True
