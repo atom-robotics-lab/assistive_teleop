@@ -9,127 +9,155 @@ import actionlib
 from assistive_teleop.msg import AvoidObstacleAction, AvoidObstacleGoal, AvoidObstacleFeedback
 #from assistive_teleop import obstacle_presence
 
-class Robot_Controller:
-    #initialised values
-    def __init__(self):
+                                        # ------ class ------ #
 
+class Robot_Controller:
+    
+    def __init__(self):
         rospy.init_node('controller')
         self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
         rospy.Subscriber('/odom', Odometry, self.odom_callback)
-        
         self.pose = []
+        self.dist_precision  = 0.1
+        self.theta_precision = 0.1
         self.state = 0
-        self.velocity_msg = Twist()
-        
+        self.velocity_msg = Twist() 
         self.ob_status = False
         self.client = actionlib.SimpleActionClient('Avoid_Obstacle_server', AvoidObstacleAction)
         print('waiting for avoid obstacle server')
         self.client.wait_for_server()
         print('server started')
+        
+        
+                                     # ------- object call back --------- #
 
     def object_cb(self, feedback):
         self.ob_status = feedback.obstacle_presence
+         
+                                     # ------- request --------- #
 
     def request(self, feedback):
         if self.ob_status == False:
-            print("sending request to server/ obstacle avoider")      #send request to server
+            print("sending request to server/ obstacle avoider")      
         else:
             pass
 
-    #odmom callack function
+
+                                    # ------- odom_callback --------- #  
+                                     
     def odom_callback(self,data):
       x = data.pose.pose.orientation.x
       y = data.pose.pose.orientation.y
       z = data.pose.pose.orientation.z
       w = data.pose.pose.orientation.w
       self.pose = [data.pose.pose.position.x, data.pose.pose.position.y, euler_from_quaternion([x,y,z,w])[2]]
-    #move function to move robot
+              
+                                   # ---------- move ----------- #
+              
     def move(self,linear,angular):
         self.velocity_msg.linear.x = linear
         self.velocity_msg.angular.z = angular 
         self.pub.publish(self.velocity_msg)
-        # print("boom")
+        
+                                  # ------------ fix error ------------- #
+                                  
+    def fix_error(self, linear_error, orien_error):
+        if linear_error != 0 and orien_error != 0:
+            self.move(2*linear_error, 2*-1*orien_error)
+        if orien_error != 0 and linear_error == 0:            
+             self.move(0,2*-1*orien_error)
 
-    #to correct postion of robot 
-    def fix_yaw(self,error_a, P):
-        self.move(0.1 * np.abs(error_a), P * -error_a)
-    #Move straight to path 
-    
-    def move_straight(self,error, P):        
-        self.move(0.4, 0)
-
-    #//Go to function
+                                     
+                                    # ------- goto  ---------- #
+                                     
     def goto(self,dest_x, dest_y):
-        '''
-         This function moves the bot towards the goal coordinates.
-         The function uses a state machine with three states: 
-         1) state = 0; fixing yaw 
-         2) state = 1; moving straight
-         3) state = 2; goal reached '''  
-
+        
+        
+        self.dest_x = dest_x
+        self.dest_y = dest_y
         self.goal = AvoidObstacleGoal()
         self.goal.pose.append(dest_x)
         self.goal.pose.append(dest_y)
-        
         self.client.send_goal(self.goal, feedback_cb = self.object_cb) 
-        
-        rate = rospy.Rate(10)
-
-        theta_precision = 0.16  
-        dist_precision = 0.35
-        #wait for message
         rospy.wait_for_message("/odom",Odometry)
         
-        while self.state != 2:
+        util = self.utils()
+        bot_theta_error = util[0]
+        bot_position_error = util[1]
+        
+
+        
+        while (np.abs(bot_theta_error) >= self.theta_precision or np.abs(bot_position_error) >= self.dist_precision ) : 
+        
             if self.ob_status == True:
                 print("Obstacle Detected, Stopping the BOT")
                 self.move(0,0)
                 self.client.wait_for_result()
-            #else:
-            #    self.client.cancel_all_goals()
+                
+            util = self.utils()
+            bot_theta_error = util[0]
+            bot_position_error = util[1]
             
-            theta_goal = np.arctan((dest_y - self.pose[1])/(dest_x - self.pose[0]))   #slope
-            if theta_goal>0:
-                theta_goal+=0.04
-            elif theta_goal<0:
-                theta_goal-=0.04
-            bot_theta=self.pose[2]   
-            theta_error = round(bot_theta - theta_goal, 2)
-            rospy.loginfo("STATE: " + str(self.state))
-            rospy.loginfo("THETA ERROR:" + str(theta_error))
-            if self.state == 0:
-                # if theta_error is greated than the required precision then fix the yaw by rotating the bot
-                # if required precision is reached then change current state to 1
-                if np.abs(theta_error) > theta_precision:   
-                    rospy.loginfo("Fixing Yaw")
-                    self.fix_yaw(theta_error, 1.7)
-                else:
-                    rospy.loginfo("Yaw Fixed!!")
-                    self.state=1
-            elif self.state==1:
-                # calculate error w.r.t to destination
-                position_error = np.sqrt(pow(dest_y - self.pose[1], 2) + pow(dest_x - self.pose[0], 2)) #distance formula
-                rospy.loginfo("POSITION ERROR: " + str(position_error))
-                # if position error is less than required precision & bot is facing the goal, move towards goal in straight line
-                # else if it is not correctly oriented change state to 1
-                # if theta_precision and dist_precision are reached change state to 2 (goal reached)
-                if position_error > dist_precision and np.abs(theta_error) < theta_precision:
-                    rospy.loginfo("Moving Straight")
-                    self.move_straight(position_error, 0.8)
-                elif np.abs(theta_error) > theta_precision:
-                    rospy.loginfo("Going out of line!")
-                    self.state = 0
-                elif position_error < dist_precision:
-                    rospy.loginfo("GOAL REACHED")
-                    self.move(0,0)
-                    self.state=2
-                    self.client.cancel_all_goals() 
-                    print("cancelling Obstacle Avoider Goal")
-
-        rospy.sleep(10)
-        rate.sleep()
+            rospy.loginfo("position error: {:.2f} m ".format(bot_position_error))  
+            rospy.loginfo("THETA ERROR: {:.2f}° ".format((180/3.14)*bot_theta_error))
+            
+            if np.abs(bot_theta_error) <= 0.3 : 
+                      print(" ")
+                      print("*********************************")
+                      print("* FIXING YAW && MOVING STRAIGHT *")
+                      print("*********************************")    
+                      print(" ") 
+                      self.fix_error(0.5, bot_theta_error) 
+                      if self.ob_status == True:
+                            print("Obstacle Detected, Stopping the BOT")
+                            self.move(0,0)
+                            self.client.wait_for_result()
+                            
+                      util = self.utils()                    
+                      bot_theta_error = util[0]
+                      bot_position_error = util[1]
+                      
+            elif  np.abs(bot_theta_error) > 0.3:
+                      print(" ")
+                      print("************************")
+                      print("*** FIXING YAW ****")
+                      print("************************") 
+                      print(" ") 
+                      self.fix_error(0, bot_theta_error) 
+                      
+                      if self.ob_status == True:
+                            print("Obstacle Detected, Stopping the BOT")
+                            self.move(0,0)
+                            self.client.wait_for_result()
+                            
+                      utils = self.utils()      
+                      bot_theta_error = utils[0]
+                      bot_position_error = utils[1]
+                      
+        if bot_position_error <= self.dist_precision and bot_theta_error <= self.theta_precision :
+                      print(" ")
+                      print("*****************************")
+                      print("** HURRAY !! GOAL REACHED ***")
+                      print("*****************************")  
+                      print(" ")                                                         
+                      print("cancelling Obstacle Avoider Goal")
+                      self.move(0,0)
+                      self.client.cancel_all_goals() 
+                      
+                     
+                  # ---------- utils ---------- # 
+                  
+    def utils(self):
+        bot_position_error = np.sqrt(pow(self.dest_y - self.pose[1], 2) + pow(self.dest_x - self.pose[0], 2)) 
+        bot_theta_goal = np.arctan((self.dest_y - self.pose[1])/(self.dest_x - self.pose[0])) 
+        bot_theta= self.pose[2]   
+        bot_theta_error = round(bot_theta - bot_theta_goal, 2) 
+        
+        return [bot_theta_error,bot_position_error]
+        
 
 if __name__ == "__main__":
     Robot = Robot_Controller()
-    Robot.goto(6,3)
+    Robot.goto(2,6)
+    Robot.move(0,0)
     
