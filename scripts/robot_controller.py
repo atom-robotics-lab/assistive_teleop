@@ -87,7 +87,7 @@ class Robot_Controller:
         
 
         
-        while (np.abs(bot_theta_error) >= self.theta_precision or np.abs(bot_position_error) >= self.dist_precision ) : 
+        while (np.abs(bot_position_error) >= self.dist_precision ) : 
         
             if self.ob_status == True:
                 print("Obstacle Detected, Stopping the BOT")
@@ -108,6 +108,7 @@ class Robot_Controller:
                       print("*********************************")    
                       print(" ") 
                       self.fix_error(0.5, bot_theta_error) 
+                      
                       if self.ob_status == True:
                             print("Obstacle Detected, Stopping the BOT")
                             self.move(0,0)
@@ -134,7 +135,7 @@ class Robot_Controller:
                       bot_theta_error = utils[0]
                       bot_position_error = utils[1]
                       
-        if bot_position_error <= self.dist_precision and bot_theta_error <= self.theta_precision :
+        if bot_position_error <= self.dist_precision  :
                       print(" ")
                       print("*****************************")
                       print("** HURRAY !! GOAL REACHED ***")
