@@ -28,10 +28,10 @@ class Object_Avoider:
             2: 'follow the wall',
         }
         self.message = Twist()
-        self.d = 1.0
+        self.d = 1.5
         rospy.init_node('Object_Avoider')
         self.pub_ = rospy.Publisher('/cmd_vel', Twist, queue_size=1)        
-        self.sub = rospy.Subscriber('/laser/scan', LaserScan, self.clbk_laser)
+        self.sub = rospy.Subscriber('/ebot/laser/scan', LaserScan, self.clbk_laser)
         rospy.Subscriber('/odom', Odometry, self.odom_callback)
 
     def odom_callback(self,data):
@@ -43,11 +43,11 @@ class Object_Avoider:
 
     def clbk_laser(self, msg):
         self.regions = {
-            'right':  min(min(msg.ranges[235:285]), 10), 
-            'fright': min(min(msg.ranges[286:335]), 10), 
-            'front':  min(min(msg.ranges[0:24] + msg.ranges[336:359]), 10), 
-            'fleft':  min(min(msg.ranges[25:75]), 10), 
-            'left':   min(min(msg.ranges[76:125]), 10),
+            'left':   min(min(msg.ranges[468:6122]), 10), 
+            'fleft':  min(min(msg.ranges[431:467]), 10), 
+            'front':  min(min(msg.ranges[288:431]), 10), 
+            'fright': min(min(msg.ranges[251:287]), 10), 
+            'right':  min(min(msg.ranges[108:251]), 10),
         }
         self.take_action()
 
@@ -76,7 +76,7 @@ class Object_Avoider:
             self.change_state(2)
         elif self.regions['front'] > self.d and self.regions['fleft'] < self.d and self.regions['fright'] > self.d:
             state_description = 'case 4 - fleft'
-            self.change_state(0)
+            self.change_state(2)
         elif self.regions['front'] < self.d and self.regions['fleft'] > self.d and self.regions['fright'] < self.d:
             state_description = 'case 5 - front and fright'
             self.change_state(1)
@@ -88,10 +88,12 @@ class Object_Avoider:
             self.change_state(1)
         elif self.regions['front'] > self.d and self.regions['fleft'] < self.d and self.regions['fright'] < self.d:
             state_description = 'case 8 - fleft and fright'
-            self.change_state(0)
+            self.change_state(2)
         else:
             state_description = 'unknown case'
             rospy.loginfo(self.regions)
+
+        print(state_description)
 
     def find_wall(self):
         self.move(0.2, -0.3)
@@ -113,8 +115,7 @@ class Object_Avoider:
             elif self.state_ == 1:
                 self.turn_left()
             elif self.state_ == 2:
-                self.follow_the_wall()
-                pass
+                self.follow_the_wall()                
             else:
                 rospy.logerr('Unknown state!')
                         
