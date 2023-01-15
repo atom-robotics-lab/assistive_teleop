@@ -21,8 +21,8 @@ class Robot_Controller:
         self.velocity_msg = Twist()
 
         self.kp = 0.5
-        self.ki = 0.3
-        self.kd = 0.2
+        self.ki = 0.9
+        self.kd = 0.15
 
         self.linear_P = 0
         self.linear_I = 0
@@ -125,6 +125,7 @@ class Robot_Controller:
                     self.linear_D = ((self.kd) * (position_error - self.linear_previous )) / dt 
                     self.linear_I =  (self.linear_I + (position_error * dt))  
                     linear_co = self.linear_P + (self.ki*self.linear_I) + self.linear_D
+                    
                     self.move_straight(linear_co)
 
                 elif np.abs(theta_error) > theta_precision:
@@ -143,4 +144,4 @@ class Robot_Controller:
 
 if __name__ == "__main__":
     Robot = Robot_Controller()
-    Robot.goto(2, -2)
+    Robot.goto(5, 5)
