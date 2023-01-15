@@ -20,9 +20,9 @@ class Robot_Controller:
         self.state = 0
         self.velocity_msg = Twist()
 
-        self.kp = 1.5
-        self.ki = 1.2
-        self.kd = 0.7
+        self.kp = 0.5
+        self.ki = 0.3
+        self.kd = 0.2
 
         self.linear_P = 0
         self.linear_I = 0
@@ -55,9 +55,8 @@ class Robot_Controller:
         # print("boom")
 
     # to correct postion of robot
-    def fix_yaw(self, angular_co):
-        self.move(0.1 * np.abs(angular_co), angular_co)
-        print(angular_co)
+    def fix_yaw(self,error_a, P):
+        self.move(0.1 * np.abs(error_a), P * -error_a)
 
     
     # Move straight to path
@@ -104,8 +103,7 @@ class Robot_Controller:
 
                 if np.abs(theta_error) > theta_precision:
                     rospy.loginfo("Fixing Yaw")
-                    angular_co = theta_error * self.kp
-                    self.fix_yaw(angular_co)
+                    self.fix_yaw(theta_error, 1.7)
 
                 else:
                     rospy.loginfo("Yaw Fixed!!")
@@ -125,8 +123,8 @@ class Robot_Controller:
                     rospy.loginfo("Moving Straight")
                     self.linear_P = (self.kp) * (position_error)
                     self.linear_D = ((self.kd) * (position_error - self.linear_previous )) / dt 
-                    self.linear_I =  (self.ki) *(self.linear_I + (position_error * dt))  
-                    linear_co = self.linear_P + self.linear_I + self.linear_D
+                    self.linear_I =  (self.linear_I + (position_error * dt))  
+                    linear_co = self.linear_P + (self.ki*self.linear_I) + self.linear_D
                     self.move_straight(linear_co)
 
                 elif np.abs(theta_error) > theta_precision:
@@ -145,4 +143,4 @@ class Robot_Controller:
 
 if __name__ == "__main__":
     Robot = Robot_Controller()
-    Robot.goto(3, 2)
+    Robot.goto(2, -2)
